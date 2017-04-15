@@ -10,6 +10,7 @@ import math
 
 ANSWER_KEY = {0: 2, 1:1 , 2: 2, 3: 3, 4: 4}
 
+
 input_image = cv2.imread('1.png')
 
 gray = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
@@ -24,6 +25,7 @@ thresh = cv2.threshold(blurred, 0, 255,
 
 thresh_edged = cv2.threshold(bilateralblur, 0, 255,
     cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+
 
 resImage = edged + (255-thresh)
 cv2.imwrite("resImage.png", resImage )
@@ -44,6 +46,7 @@ cv2.imwrite('ndefa.jpg' , dilated)
 contourrs, hierarchy = cv2.findContours(dilated,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE) # get contours
 index = 0 
 questionCnts = []
+
 
 for contour in contourrs:
         # get rectangle bounding contour
