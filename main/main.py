@@ -8,6 +8,7 @@ import imutils
 import cv2
 import math
 
+
 ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2}
 
 input_image = cv2.imread('1.png')
@@ -62,11 +63,11 @@ for contour in contourrs:
 
 ima = cv2.bitwise_and(image, image, mask=mask)
 cv2.imwrite('ndefa.jpg' , ima)
+
 kernel = np.ones((4,4),np.uint8)
 # erosion = cv2.erode(ima,kernel,iterations = 1)
 dilation = cv2.dilate(ima,kernel,iterations = 1)
 cv2.imwrite('nnn.jpg' , dilation)
-
 
 ###########################################
 gray = cv2.cvtColor(dilation, cv2.COLOR_BGR2GRAY)
@@ -100,7 +101,6 @@ for contour in cons:
 # the total number of correct answers
 questionCnts = contours.sort_contours(questionCnts,
     method="top-to-bottom")[0]
-print(len(questionCnts))
 
 # cv2.drawContours(ima, questionCnts, -1, (169,169,169), 3)
 # cv2.imwrite("cont3.jpg", ima )
@@ -109,6 +109,7 @@ print(len(questionCnts))
 correct = 0
 # each question has 4 possible answers, to loop over the
 # question in batches of 5
+
 for (q, i) in enumerate(np.arange(0, 44, 4)):
     # sort the contours for the current question from
     # left to right, then initialize the index of the
@@ -119,9 +120,6 @@ for (q, i) in enumerate(np.arange(0, 44, 4)):
     # cv2.imwrite("cont.jpg", resImage )
     # cv2.imshow("aaa",resImage)
     # cv2.waitKey(0)
-    cv2.drawContours(ima, cnts, -1, (169,169,169), 3)
-    cv2.imwrite("co.jpg", ima )
-    # print(q)
     # loop over the sorted contours
     for (j, c) in enumerate(cnts):
         # construct a mask that reveals only the current
@@ -135,7 +133,6 @@ for (q, i) in enumerate(np.arange(0, 44, 4)):
         mask = cv2.bitwise_and(thresh_edged, thresh_edged, mask=mask)
         total = cv2.countNonZero(mask)
         # print(total)
-       
         # if the current total has a larger number of total
         # non-zero pixels, then we are examining the currently
         # bubbled-in answer
