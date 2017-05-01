@@ -2,149 +2,190 @@
 # import the necessary packages
 from imutils.perspective import four_point_transform
 from imutils import contours
-import numpy as np
-import argparse
 import imutils
+import numpy as np
 import cv2
-import math
-
+import os
 
 ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2}
 
-input_image = cv2.imread('1.png')
+class Image:
+    def __init__(self, img):
+        self.originalImage      = img            #cv2 image object > the one we get from imread
 
-gray = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
-blurred = cv2.GaussianBlur(gray, (7, 7), 0)
-bilateralblur = cv2.bilateralFilter(gray,9,75,75)
+        self.croppedImage       = self._crop()
+        self.preprocessedImage  = self._preProcess()
+        self.resultImage        = self._grade()
+        self.name = "1"
 
-edged = cv2.Canny(input_image, 75, 200)
-bilateraledged = cv2.Canny(bilateralblur,75,200)
+    def _preProcess(self):
+        input_image = self.croppedImage
 
-thresh = cv2.threshold(blurred, 0, 255,
-    cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+        gray        = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
+        blurred     = cv2.GaussianBlur(gray, (7, 7), 0)
+        edged       = cv2.Canny(input_image, 75, 200)
+        thresh      = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
-thresh_edged = cv2.threshold(bilateralblur, 0, 255,
-    cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+        resImage    = edged + (255 - thresh)
+        cv2.imwrite("resImage.png", resImage)
+
+        # remove everything but the circles
+        image           = cv2.imread("resImage.png")
+        img2gray        = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        ret, mask       = cv2.threshold(img2gray, 180, 255, cv2.THRESH_BINARY)
+        image_final     = cv2.bitwise_and(img2gray, img2gray, mask=mask)
+        # for black text , cv.THRESH_BINARY_INV
+        ret, new_img    = cv2.threshold(image_final, 180, 255, cv2.THRESH_BINARY)
+        # to manipulate the orientation of dilution , large x means horizonatally dilating  more, large y means vertically dilating more
+        kernel          = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+        dilated         = cv2.dilate(new_img, kernel, iterations=9)
+
+        _, contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # get contours
+        for contour in contours:
+            [x, y, w, h] = cv2.boundingRect(contour)
+            if h > 500:
+                continue
+            cv2.drawContours(mask, [contour], -1, 0, -1)
+
+        ima = cv2.bitwise_and(image, image, mask=mask)
+        cv2.imwrite('ndefa.jpg', ima)
+
+        kernel = np.ones((4, 4), np.uint8)
+        dilation = cv2.dilate(ima, kernel, iterations=1)
+        cv2.imwrite('dilated.jpg', dilation)
+
+        return dilation
 
 
-resImage = edged + (255-thresh)
-cv2.imwrite("resImage.png", resImage )
+    def _grade(self):
+        gray = cv2.cvtColor(self.preprocessedImage, cv2.COLOR_BGR2GRAY)
+        bilateralblur = cv2.bilateralFilter(gray, 9, 75, 75)
 
-# remove everything but the circles
-image = cv2.imread("resImage.png")
-mask = np.ones(image.shape[:2], dtype="uint8") * 255
-img2gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-ret, mask = cv2.threshold(img2gray, 180, 255, cv2.THRESH_BINARY)
-image_final = cv2.bitwise_and(img2gray , img2gray , mask =  mask)
-ret, new_img = cv2.threshold(image_final, 180 , 255, cv2.THRESH_BINARY)  # for black text , cv.THRESH_BINARY_INV
-  
-kernel = cv2.getStructuringElement(cv2.MORPH_CROSS,(3 , 3)) # to manipulate the orientation of dilution , large x means horizonatally dilating  more, large y means vertically dilating more 
-dilated = cv2.dilate(new_img,kernel,iterations = 9) # dilate , more the iteration more the dilation
+        thresh_edged = cv2.threshold(bilateralblur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
-# cv2.imwrite('ndefa.jpg' , dilated)
+        _, cons, _ = cv2.findContours(thresh_edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # get contours
+        questionCnts = []
 
-contourrs, hierarchy = cv2.findContours(dilated,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE) # get contours
-index = 0 
-for contour in contourrs:
-    # # get rectangle bounding contour
-    [x,y,w,h] = cv2.boundingRect(contour)
-    # ar = w / float(h)
-    # # in order to label the contour as a question, region
-    # # should be sufficiently wide, sufficiently tall, and
-    # # have an aspect ratio approximately equal to 1
-    # if w >= 3 and h >= 3 and ar >= 0.9 and ar <= 1.1:
-    #     questionCnts.append(contour)
-    #Don't plot small false positives that aren't text
-    if  h > 500:
-        continue
-    # draw rectangle around contour on original image
-    # cv2.rectangle(ima,(x,y),(x+w,y+h),(255,0,255),2)
-    cv2.drawContours(mask, [contour], -1, 0, -1)
+        for contour in cons:
+            [x, y, w, h] = cv2.boundingRect(contour)
+            ar = w / float(h)
+            if w >= 3 and h >= 3 and ar >= 0.8 and ar <= 1.2:
+                questionCnts.append(contour)
+                print contour
 
-ima = cv2.bitwise_and(image, image, mask=mask)
-cv2.imwrite('ndefa.jpg' , ima)
+        questionCnts = contours.sort_contours(questionCnts, method="top-to-bottom")[0]
 
-kernel = np.ones((4,4),np.uint8)
-# erosion = cv2.erode(ima,kernel,iterations = 1)
-dilation = cv2.dilate(ima,kernel,iterations = 1)
-cv2.imwrite('nnn.jpg' , dilation)
+        correct = 0
+        self.show("cropped")
+        for (q, i) in enumerate(np.arange(0, 44, 4)):
+            cnts = contours.sort_contours(questionCnts[i:i + 4], method="left-to-right")[0]
+            bubbled = None
+            for (j, c) in enumerate(cnts):
+                mask = np.zeros(thresh_edged.shape, dtype="uint8")
+                cv2.drawContours(mask, [c], -1, 255, -1)
 
-###########################################
-gray = cv2.cvtColor(dilation, cv2.COLOR_BGR2GRAY)
-blurred = cv2.GaussianBlur(gray, (7, 7), 0)
-bilateralblur = cv2.bilateralFilter(gray,9,75,75)
+                mask = cv2.bitwise_and(thresh_edged, thresh_edged, mask=mask)
+                total = cv2.countNonZero(mask)
+                if bubbled is None or total > bubbled[0]:
+                    bubbled = (total, j)
 
-edged = cv2.Canny(ima, 75, 200)
-bilateraledged = cv2.Canny(bilateralblur,75,200)
+            k = ANSWER_KEY[q]
+            print(q, k, bubbled[1])
+            if k == bubbled[1]:
+                correct += 1
+        print(correct)
 
-thresh = cv2.threshold(blurred, 0, 255,
-    cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    def _crop(self):
 
-thresh_edged = cv2.threshold(bilateralblur, 0, 255,
-    cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+        image = self.originalImage[650:1753, 10:1240]
 
-cons, hierarchy = cv2.findContours(thresh_edged,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE) # get contours
-index = 0 
-questionCnts = []
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        edged = cv2.Canny(blurred, 75, 200)
 
-for contour in cons:
-    # get rectangle bounding contour
-    [x,y,w,h] = cv2.boundingRect(contour)
-    ar = w / float(h)
-    # in order to label the contour as a question, region
-    # should be sufficiently wide, sufficiently tall, and
-    # have an aspect ratio approximately equal to 1
-    if w>= 3 and h >= 3 and ar >= 0.8 and ar <= 1.2:
-        questionCnts.append(contour)
+        cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL,
+                                cv2.CHAIN_APPROX_SIMPLE)
+        cnts = cnts[0] if imutils.is_cv2() else cnts[1]
+        docCnt = None
 
-# sort the question contours top-to-bottom, then initialize
-# the total number of correct answers
-questionCnts = contours.sort_contours(questionCnts,
-    method="top-to-bottom")[0]
+        if len(cnts) > 0:
 
-# cv2.drawContours(ima, questionCnts, -1, (169,169,169), 3)
-# cv2.imwrite("cont3.jpg", ima )
+            cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
+            for c in cnts:
+                peri = cv2.arcLength(c, True)
+                approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+                if len(approx) == 4:
+                    docCnt = approx
+                    break
 
-#################################################
-correct = 0
-# each question has 4 possible answers, to loop over the
-# question in batches of 5
+        cv2.drawContours(image, [docCnt], -1, (0, 255, 0), 3)
 
-for (q, i) in enumerate(np.arange(0, 44, 4)):
-    # sort the contours for the current question from
-    # left to right, then initialize the index of the
-    # bubbled answer
-    cnts = contours.sort_contours(questionCnts[i:i + 4])[0]
-    bubbled = None
-    # cv2.drawContours(resImage, cnts, -1, (255,0,0), 3)
-    # cv2.imwrite("cont.jpg", resImage )
-    # cv2.imshow("aaa",resImage)
-    # cv2.waitKey(0)
-    # loop over the sorted contours
-    for (j, c) in enumerate(cnts):
-        # construct a mask that reveals only the current
-        # "bubble" for the question
-        mask = np.zeros(thresh_edged.shape, dtype="uint8")
-        cv2.drawContours(mask, [c], -1, 255, -1)
-     
-        # apply the mask to the thresholded image, then
-        # count the number of non-zero pixels in the
-        # bubble area
-        mask = cv2.bitwise_and(thresh_edged, thresh_edged, mask=mask)
-        total = cv2.countNonZero(mask)
-        # print(total)
-        # if the current total has a larger number of total
-        # non-zero pixels, then we are examining the currently
-        # bubbled-in answer
-        if bubbled is None or total > bubbled[0]:
-            bubbled = (total, j)
-            # initialize the contour color and the index of the
-            # *correct* answer
-    color = (0, 0, 255)
-    k = ANSWER_KEY[q]
-    print(q, k, bubbled[1])     
-    # check to see if the bubbled answer is correct
-    if k == bubbled[1]:
-        color = (0, 255, 0)
-        correct += 1
-print(correct)
+        paper = four_point_transform(image, docCnt.reshape(4, 2))
+
+        imS = cv2.resize(paper, (600, 600))
+        self.preprocessedImage = imS
+
+        return imS
+
+
+    #mmkn a3mlo enum bs mlee4 mzag dlw2ty
+    def show(self,whichImage):
+        if whichImage == "original":
+            im = self.originalImage
+            cv2.namedWindow("original image", cv2.WINDOW_NORMAL)
+
+        elif whichImage == "cropped":
+            im = self.preprocessedImage
+            cv2.namedWindow("cropped image", cv2.WINDOW_NORMAL)
+
+        elif whichImage == "result":
+            im = self.resultImage
+            cv2.namedWindow("result image", cv2.WINDOW_NORMAL)
+
+        cv2.imshow("img", im)
+        cv2.waitKey(0)
+
+
+class Grader:
+    def __init__(self, path):
+        self.images = []
+
+        self.get_images(path)
+        self.iterate_images()
+
+
+    def get_images(self,path):
+        image_paths = [os.path.join(path, f) for f in os.listdir(path)]
+
+        for i in image_paths:
+            img = cv2.imread(i)
+            self.images.append(img)
+
+        return self.images
+
+    def iterate_images(self):
+        grades_dict = {}
+        for image in self.images:
+            im = Image(image)
+            grades_dict[im.get_name()] = im.get_grade()
+
+    def set_AnswerKey(self, dict):
+        self.ANSWER_KEY = dict
+
+if __name__ == '__main__':
+    grader = Grader('/home/bubbles/3anQa2/College/imgpro/train')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
