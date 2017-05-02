@@ -8,6 +8,7 @@ import cv2
 import os
 
 ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2}
+WHICH_CV = None
 
 class Image:
     def __init__(self, img):
@@ -17,6 +18,14 @@ class Image:
         self.preprocessedImage  = self._preProcess()
         self.resultImage        = self._grade()
         self.name = "1"
+
+    def get_contours(self,image):
+        if WHICH_CV == "shu":
+            contours, hierarchy = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        else :
+            _, contours, _ = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        return  contours
+
 
     def _preProcess(self):
         input_image = self.croppedImage
@@ -40,8 +49,8 @@ class Image:
         kernel          = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
         dilated         = cv2.dilate(new_img, kernel, iterations=9)
 
-        
-        contours, hierarchy = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # get contours
+
+        contours = self.get_contours(dilated)
         for contour in contours:
             (x, y, w, h) = cv2.boundingRect(contour)
             if h > 500:
@@ -64,7 +73,7 @@ class Image:
 
         thresh_edged = cv2.threshold(bilateralblur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
-        cons, hierarchy = cv2.findContours(thresh_edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # get contours
+        cons = self.get_contours(thresh_edged)
         questionCnts = []
 
         for contour in cons:
@@ -72,7 +81,6 @@ class Image:
             ar = w / float(h)
             if w >= 3 and h >= 3 and ar >= 0.8 and ar <= 1.2:
                 questionCnts.append(contour)
-                print contour
 
         questionCnts = contours.sort_contours(questionCnts, method="top-to-bottom")[0]
 
