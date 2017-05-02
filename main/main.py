@@ -13,7 +13,7 @@ class Image:
     def __init__(self, img):
         self.originalImage      = img            #cv2 image object > the one we get from imread
 
-        self.croppedImage       = self._crop()
+        self.croppedImage       = img
         self.preprocessedImage  = self._preProcess()
         self.resultImage        = self._grade()
         self.name = "1"
@@ -169,13 +169,13 @@ class Grader:
         grades_dict = {}
         for image in self.images:
             im = Image(image)
-            grades_dict[im.get_name()] = im.get_grade()
+            grades_dict[im.name] = im._grade()
 
     def set_AnswerKey(self, dict):
         self.ANSWER_KEY = dict
 
 if __name__ == '__main__':
-    grader = Grader('/home/shimaa/Desktop/Working_Space/College/ImageProcessing/Materials/tr')
+    grader = Grader('./hi')
 
 
 
