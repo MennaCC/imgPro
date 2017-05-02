@@ -40,9 +40,10 @@ class Image:
         kernel          = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
         dilated         = cv2.dilate(new_img, kernel, iterations=9)
 
-        _, contours, _ = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # get contours
+        
+        contours, hierarchy = cv2.findContours(dilated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # get contours
         for contour in contours:
-            [x, y, w, h] = cv2.boundingRect(contour)
+            (x, y, w, h) = cv2.boundingRect(contour)
             if h > 500:
                 continue
             cv2.drawContours(mask, [contour], -1, 0, -1)
@@ -63,11 +64,11 @@ class Image:
 
         thresh_edged = cv2.threshold(bilateralblur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
-        _, cons, _ = cv2.findContours(thresh_edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # get contours
+        cons, hierarchy = cv2.findContours(thresh_edged, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # get contours
         questionCnts = []
 
         for contour in cons:
-            [x, y, w, h] = cv2.boundingRect(contour)
+            (x, y, w, h) = cv2.boundingRect(contour)
             ar = w / float(h)
             if w >= 3 and h >= 3 and ar >= 0.8 and ar <= 1.2:
                 questionCnts.append(contour)
@@ -96,14 +97,14 @@ class Image:
         print(correct)
 
     def _crop(self):
-
         image = self.originalImage[650:1753, 10:1240]
+
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         edged = cv2.Canny(blurred, 75, 200)
 
-        cnts = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL,
+        cnts, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL,
                                 cv2.CHAIN_APPROX_SIMPLE)
         cnts = cnts[0] if imutils.is_cv2() else cnts[1]
         docCnt = None
@@ -118,7 +119,7 @@ class Image:
                     docCnt = approx
                     break
 
-        cv2.drawContours(image, [docCnt], -1, (0, 255, 0), 3)
+        cv2.drawContours(image, docCnt, -1, (0, 255, 0), 3)
 
         paper = four_point_transform(image, docCnt.reshape(4, 2))
 
@@ -154,6 +155,7 @@ class Grader:
         self.iterate_images()
 
 
+
     def get_images(self,path):
         image_paths = [os.path.join(path, f) for f in os.listdir(path)]
 
@@ -173,7 +175,7 @@ class Grader:
         self.ANSWER_KEY = dict
 
 if __name__ == '__main__':
-    grader = Grader('/home/bubbles/3anQa2/College/imgpro/train')
+    grader = Grader('/home/shimaa/Desktop/Working_Space/College/ImageProcessing/Materials/tr')
 
 
 
