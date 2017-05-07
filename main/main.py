@@ -15,7 +15,7 @@ ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2}
 # 	25:1, 26:2, 27:2, 28:3, 29:0, 30:0, 31:2, 32:1, 33:1, 34:3, 35:1, 36:2, 37:3, 
 # 	38:2, 39:2, 40:1, 41:2, 42:1, 43:2, 44:1}
 
-WHICH_CV = None
+WHICH_CV = "shu"
 
 class Image:
     def __init__(self, img):
@@ -92,7 +92,7 @@ class Image:
         questionCnts = contours.sort_contours(questionCnts, method="top-to-bottom")[0]
 
         correct = 0
-        self.show("cropped")
+        # self.show("cropped")
         for (q, i) in enumerate(np.arange(0, 44, 4)):
             cnts = contours.sort_contours(questionCnts[i:i + 4], method="left-to-right")[0]
             bubbled = None
@@ -190,16 +190,16 @@ class Grader:
         self.ANSWER_KEY = dict
 
     def evaluate(self, obtained_marks):
-    	# read the csv file 
-		marks_file = pandas.read_csv('/home/shimaa/Desktop/Working_Space/College/ImageProcessing/Project/Materials/train.csv')
-		#cut only the filename and the mark columns
-		marks_file = marks_file[['FileName','Mark']]
-		# convert the dataframe to dictionary 
-		correct_marks = marks_file.set_index('FileName')['Mark'].to_dict()
-		#compare the results
-		for key in obtained_marks :
-    		if key in correct_marks :
-        		if correct_marks[key] != obtained_marks[key] :
+        # read the csv file 
+    	marks_file = pandas.read_csv('/home/shimaa/Desktop/Working_Space/College/ImageProcessing/Project/Materials/train.csv')
+    	#cut only the filename and the mark columns
+    	marks_file = marks_file[['FileName','Mark']]
+    	# convert the dataframe to dictionary 
+    	correct_marks = marks_file.set_index('FileName')['Mark'].to_dict()
+    	#compare the results
+    	for key in obtained_marks :
+            if key in correct_marks :
+        	    if correct_marks[key] != obtained_marks[key] :
             		print("For the file {}".format(key))
             		print("Correct mark is {} but the obtained is {}".format(correct_marks[key], obtained_marks[key]))
 
