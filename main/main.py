@@ -1,12 +1,11 @@
 #!/usr/bin/python
 # import the necessary packages
-import pandas as pandas
-from imutils.perspective import four_point_transform
+# import pandas as pandas
 from imutils import contours
-import imutils
 import numpy as np
 import cv2
 import os
+from crop import Cropper
 
 ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2}
 
@@ -21,9 +20,14 @@ class Image:
     def __init__(self, img):
         self.originalImage      = img            #cv2 image object > the one we get from imread
 
-        self.croppedImage       = img
+        self.croppedImage       = self._crop()
+        self.show("cropped")
+
         self.preprocessedImage  = self._preProcess()
+        self.show("preprocessed")
+
         self.resultImage        = self._grade()
+
         self.name = "1"
 
     def get_contours(self,image):
@@ -34,7 +38,7 @@ class Image:
         return  contours
 
 
-    def _preProcess(self):
+    def _preProcess(seelf):
         input_image = self.croppedImage
 
         gray        = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
@@ -92,7 +96,6 @@ class Image:
         questionCnts = contours.sort_contours(questionCnts, method="top-to-bottom")[0]
 
         correct = 0
-        self.show("cropped")
         for (q, i) in enumerate(np.arange(0, 44, 4)):
             cnts = contours.sort_contours(questionCnts[i:i + 4], method="left-to-right")[0]
             bubbled = None
@@ -112,53 +115,38 @@ class Image:
         print(correct)
 
     def _crop(self):
-        image = self.originalImage[650:1753, 10:1240]
+        cropper = Cropper(self.originalImage)
+        self.croppedImage = cropper.get_cropped_img()
+        # self.croppedImage = cv2.imread('crop.jpg')
+        self.show('cropped')
 
-
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        edged = cv2.Canny(blurred, 75, 200)
-
-        cnts, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL,
-                                cv2.CHAIN_APPROX_SIMPLE)
-        cnts = cnts[0] if imutils.is_cv2() else cnts[1]
-        docCnt = None
-
-        if len(cnts) > 0:
-
-            cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
-            for c in cnts:
-                peri = cv2.arcLength(c, True)
-                approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                if len(approx) == 4:
-                    docCnt = approx
-                    break
-
-        cv2.drawContours(image, docCnt, -1, (0, 255, 0), 3)
-
-        paper = four_point_transform(image, docCnt.reshape(4, 2))
-
-        imS = cv2.resize(paper, (600, 600))
-        self.preprocessedImage = imS
-
-        return imS
+        return self.croppedImage
 
 
     #mmkn a3mlo enum bs mlee4 mzag dlw2ty
     def show(self,whichImage):
+        self.namewindow = ""
         if whichImage == "original":
             im = self.originalImage
+            self.namewindow = "original image"
             cv2.namedWindow("original image", cv2.WINDOW_NORMAL)
 
         elif whichImage == "cropped":
-            im = self.preprocessedImage
+            im = self.croppedImage
+            self.namewindow = "cropped image"
             cv2.namedWindow("cropped image", cv2.WINDOW_NORMAL)
+
+        elif whichImage == "preprocessed":
+            im = self.preprocessedImage
+            self.namewindow = "preprocessed image"
+            cv2.namedWindow("preprocessed image", cv2.WINDOW_NORMAL)
 
         elif whichImage == "result":
             im = self.resultImage
+            self.namewindow = "result image"
             cv2.namedWindow("result image", cv2.WINDOW_NORMAL)
 
-        cv2.imshow("img", im)
+        cv2.imshow(self.namewindow, im)
         cv2.waitKey(0)
 
 
@@ -189,21 +177,22 @@ class Grader:
     def set_AnswerKey(self, dict):
         self.ANSWER_KEY = dict
 
-    def evaluate(self, obtained_marks):
-    	# read the csv file 
-		marks_file = pandas.read_csv('/home/shimaa/Desktop/Working_Space/College/ImageProcessing/Project/Materials/train.csv')
-		#cut only the filename and the mark columns
-		marks_file = marks_file[['FileName','Mark']]
-		# convert the dataframe to dictionary 
-		correct_marks = marks_file.set_index('FileName')['Mark'].to_dict()
-		#compare the results
-		for key in obtained_marks :
-    		if key in correct_marks :
-        		if correct_marks[key] != obtained_marks[key] :
-            		print("For the file {}".format(key))
-            		print("Correct mark is {} but the obtained is {}".format(correct_marks[key], obtained_marks[key]))
+    # def evaluate(self, obtained_marks):
+    # 	# read the csv file
+		# marks_file = pandas.read_csv('/home/shimaa/Desktop/Working_Space/College/ImageProcessing/Project/Materials/train.csv')
+		# #cut only the filename and the mark columns
+		# marks_file = marks_file[['FileName','Mark']]
+		# # convert the dataframe to dictionary
+		# correct_marks = marks_file.set_index('FileName')['Mark'].to_dict()
+		# #compare the results
+		# for key in obtained_marks :
+    #         if key in correct_marks:
+    #             if correct_marks[key] != obtained_marks[key] :
+    #         		print("For the file {}".format(key))
+    #         		print("Correct mark is {} but the obtained is {}".format(correct_marks[key], obtained_marks[key]))
 
 if __name__ == '__main__':
+    # grader = Grader('/home/bubbles/3anQa2/College/imgpro/train')
     grader = Grader('./hi')
 
 
