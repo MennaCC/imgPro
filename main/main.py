@@ -9,7 +9,6 @@ import cv2
 import os
 import math 
 
-# ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2}
 
 ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2,
 	12:3, 13:1, 14:1, 15:0, 16:3, 17:2, 18:2, 19:2, 20:1, 21:2, 22:3, 23:2, 24:0, 
@@ -24,6 +23,9 @@ class Image:
 
         self.croppedImage       = img
         self.preprocessedImage  = self._preProcess()
+        self.cropped_imgs = []
+        self.cropped_imgs.append(self.preprocessedImage)
+        # self.cropped_imgs = self._cutImage()
         # self.resultImage        = self._grade()
         self.name = "1"
 
@@ -74,41 +76,54 @@ class Image:
 
         return dilation
 
+    def _cutImage(self):
+        cropped_imgs = []
+
+        cropped_imgs.append(self.preprocessedImage[1500:2700, 200:850])
+        cropped_imgs.append(self.preprocessedImage[1500:2700, 850:1500])
+        cropped_imgs.append(self.preprocessedImage[1500:2700, 1500:2200])
+
+        return cropped_imgs
+
 
     def _grade(self):
-        gray = cv2.cvtColor(self.preprocessedImage, cv2.COLOR_BGR2GRAY)
-        bilateralblur = cv2.bilateralFilter(gray, 9, 75, 75)
 
-        thresh_edged = cv2.threshold(bilateralblur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+        for image in self.cropped_imgs :
 
-        cons = self.get_contours(thresh_edged)
-        questionCnts = []
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            bilateralblur = cv2.bilateralFilter(gray, 9, 75, 75)
 
-        for contour in cons:
-            (x, y, w, h) = cv2.boundingRect(contour)
-            ar = w / float(h)
-            if w >= 3 and h >= 3 and ar >= 0.8 and ar <= 1.2:
-                questionCnts.append(contour)
+            thresh_edged = cv2.threshold(bilateralblur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
-        questionCnts = contours.sort_contours(questionCnts, method="top-to-bottom")[0]
-        correct = 0
-        # self.show("cropped")
-        for (q, i) in enumerate(np.arange(0, len(questionCnts), 4)):
-            cnts = contours.sort_contours(questionCnts[i:i + 4])[0]
-            bubbled = None
-            for (j, c) in enumerate(cnts):
-                mask = np.zeros(thresh_edged.shape, dtype="uint8")
-                cv2.drawContours(mask, [c], -1, 255, -1)
+            cons = self.get_contours(thresh_edged)
+            questionCnts = []
 
-                mask = cv2.bitwise_and(thresh_edged, thresh_edged, mask=mask)
-                total = cv2.countNonZero(mask)
-                if bubbled is None or total > bubbled[0]:
-                    bubbled = (total, j)
+            for contour in cons:
+                (x, y, w, h) = cv2.boundingRect(contour)
+                ar = w / float(h)
+                if w >= 3 and h >= 3 and ar >= 0.8 and ar <= 1.2:
+                    questionCnts.append(contour)
 
-            k = ANSWER_KEY[q]
-            print(q, k, bubbled[1])
-            if k == bubbled[1]:
-                correct += 1
+            questionCnts = contours.sort_contours(questionCnts, method="top-to-bottom")[0]
+            correct = 0
+            # self.show("cropped")
+            for (q, i) in enumerate(np.arange(0, len(questionCnts), 4)):
+                cnts = contours.sort_contours(questionCnts[i:i + 4])[0]
+                bubbled = None
+                for (j, c) in enumerate(cnts):
+                    mask = np.zeros(thresh_edged.shape, dtype="uint8")
+                    cv2.drawContours(mask, [c], -1, 255, -1)
+
+                    mask = cv2.bitwise_and(thresh_edged, thresh_edged, mask=mask)
+                    total = cv2.countNonZero(mask)
+                    if bubbled is None or total > bubbled[0]:
+                        bubbled = (total, j)
+
+                k = ANSWER_KEY[q]
+                print(q, k, bubbled[1])
+                if k == bubbled[1]:
+                    correct += 1
+
         print(correct)
 
     def _crop(self):
