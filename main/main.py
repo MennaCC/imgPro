@@ -17,7 +17,7 @@ ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2}
 WHICH_CV = None
 
 class Image:
-    def __init__(self, img):
+    def __init__(self, img, imgName):
         self.originalImage      = img            #cv2 image object > the one we get from imread
 
         self.croppedImage       = self._crop()
@@ -28,7 +28,7 @@ class Image:
 
         self.resultImage        = self._grade()
 
-        self.name = "1"
+        self.name = imgName
 
     def get_contours(self,image):
         if WHICH_CV == "shu":
@@ -113,6 +113,7 @@ class Image:
             if k == bubbled[1]:
                 correct += 1
         print(correct)
+        return correct
 
     def _crop(self):
         cropper = Cropper(self.originalImage)
@@ -153,6 +154,7 @@ class Image:
 class Grader:
     def __init__(self, path):
         self.images = []
+        self.imagesDict = {}
 
         self.get_images(path)
         self.iterate_images()
@@ -164,15 +166,18 @@ class Grader:
 
         for i in image_paths:
             img = cv2.imread(i)
+            imName = os.path.basename(os.path.normpath(i))
             self.images.append(img)
+            self.imagesDict[imName] = img
 
         return self.images
 
     def iterate_images(self):
         grades_dict = {}
-        for image in self.images:
-            im = Image(image)
-            grades_dict[im.name] = im._grade()
+        for imName in self.imagesDict:
+            image = self.imagesDict[imName]
+            im = Image(image, imName)
+            grades_dict[imName] = im._grade()
 
     def set_AnswerKey(self, dict):
         self.ANSWER_KEY = dict
