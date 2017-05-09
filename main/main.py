@@ -38,7 +38,7 @@ class Image:
         return  contours
 
 
-    def _preProcess(seelf):
+    def _preProcess(self):
         input_image = self.croppedImage
 
         gray        = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
