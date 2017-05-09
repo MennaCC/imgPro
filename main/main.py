@@ -7,7 +7,9 @@ import imutils
 import numpy as np
 import cv2
 import os
-import math 
+import math
+from crop import Cropper
+
 
 
 ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2,
@@ -15,18 +17,22 @@ ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2,
 	25:1, 26:2, 27:2, 28:3, 29:0, 30:0, 31:2, 32:1, 33:1, 34:3, 35:1, 36:2, 37:3, 
 	38:2, 39:2, 40:0, 41:2, 42:1, 43:2, 44:1}
 
-WHICH_CV = "shu"
+# WHICH_CV = "shu"
+WHICH_CV = None
 
 class Image:
     def __init__(self, img):
-        self.originalImage      = img            #cv2 image object > the one we get from imread
+        self.originalImage = img            #cv2 image object > the one we get from imread
 
-        self.croppedImage       = img
+        self.croppedImage = self._crop()
+        self.show("cropped")
+
         self.preprocessedImage  = self._preProcess()
+        self.show("preprocessed")
+
         self.cropped_imgs = []
         self.cropped_imgs.append(self.preprocessedImage)
         # self.cropped_imgs = self._cutImage()
-        # self.resultImage        = self._grade()
         self.name = "1"
 
     def get_contours(self,image):
@@ -127,53 +133,38 @@ class Image:
         print(correct)
 
     def _crop(self):
-        image = self.originalImage[650:1753, 10:1240]
+        # self.croppedImage = cv2.imread('crop.jpg')
+        cropper = Cropper(self.originalImage)
+        self.croppedImage = cropper.get_cropped_img()
+        self.show('cropped')
 
-
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        edged = cv2.Canny(blurred, 75, 200)
-
-        cnts, hierarchy = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL,
-                                cv2.CHAIN_APPROX_SIMPLE)
-        cnts = cnts[0] if imutils.is_cv2() else cnts[1]
-        docCnt = None
-
-        if len(cnts) > 0:
-
-            cnts = sorted(cnts, key=cv2.contourArea, reverse=True)
-            for c in cnts:
-                peri = cv2.arcLength(c, True)
-                approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-                if len(approx) == 4:
-                    docCnt = approx
-                    break
-
-        cv2.drawContours(image, docCnt, -1, (0, 255, 0), 3)
-
-        paper = four_point_transform(image, docCnt.reshape(4, 2))
-
-        imS = cv2.resize(paper, (600, 600))
-        self.preprocessedImage = imS
-
-        return imS
+        return self.croppedImage
 
 
     #mmkn a3mlo enum bs mlee4 mzag dlw2ty
     def show(self,whichImage):
+        self.namewindow = ""
         if whichImage == "original":
             im = self.originalImage
+            self.namewindow = "original image"
             cv2.namedWindow("original image", cv2.WINDOW_NORMAL)
 
         elif whichImage == "cropped":
-            im = self.preprocessedImage
+            im = self.croppedImage
+            self.namewindow = "cropped image"
             cv2.namedWindow("cropped image", cv2.WINDOW_NORMAL)
+
+        elif whichImage == "preprocessed":
+            im = self.preprocessedImage
+            self.namewindow = "preprocessed image"
+            cv2.namedWindow("preprocessed image", cv2.WINDOW_NORMAL)
 
         elif whichImage == "result":
             im = self.resultImage
+            self.namewindow = "result image"
             cv2.namedWindow("result image", cv2.WINDOW_NORMAL)
 
-        cv2.imshow("img", im)
+        cv2.imshow(self.namewindow, im)
         cv2.waitKey(0)
 
 
@@ -225,6 +216,7 @@ class Grader:
         score = (1.0 * score )/ count
 
 if __name__ == '__main__':
+    # grader = Grader('/home/bubbles/3anQa2/College/imgpro/train')
     grader = Grader('./hi')
 
 
