@@ -67,8 +67,8 @@ class Cropper():
                 circles.append(cX)
                 circles.append(cY)
                 area = cv2.contourArea(c)
-                print shape, cX, cY
-                print area
+                # print shape, cX, cY
+                # print area
 
             cv2.putText(image, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX,
                         0.5, (0, 255, 255), 2)
@@ -80,7 +80,8 @@ class Cropper():
 
         theta1 = self.theta_hanem(d1, d2)
         self.rotate(image2, theta1)
-        self.crop('rotate.jpg')
+        # self.crop('rotate.jpg')
+        self._cutImage()
 
     def get_cropped_img(self):
         return self.crop_img
@@ -101,6 +102,16 @@ class Cropper():
         img = cv2.imread('rotate.jpg')
         self.crop_img = img[1500:2700, 200:2080]
         cv2.imwrite("crop.jpg", self.crop_img)
+
+    def _cutImage(self):
+        self.crop_img = []
+        img = cv2.imread('rotate.jpg')
+        self.crop_img.append(img[1500:2700, 350:750])
+        cv2.imwrite("crop1.jpg", self.crop_img[0])
+        self.crop_img.append(img[1500:2700, 850:1500])
+        cv2.imwrite("crop2.jpg", self.crop_img[1])
+        self.crop_img.append(img[1500:2700, 1500:2200])
+        cv2.imwrite("crop3.jpg", self.crop_img[2])
 
 
 # image_path1 = '/home/bubbles/3anQa2/College/imgpro/imgPro/main/1Uncropped.png'
