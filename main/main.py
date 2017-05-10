@@ -12,28 +12,32 @@ from crop import Cropper
 
 
 
-ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2,
-	12:3, 13:1, 14:1, 15:0, 16:3, 17:2, 18:2, 19:2, 20:1, 21:2, 22:3, 23:2, 24:0, 
-	25:1, 26:2, 27:2, 28:3, 29:0, 30:0, 31:2, 32:1, 33:1, 34:3, 35:1, 36:2, 37:3, 
-	38:2, 39:2, 40:0, 41:2, 42:1, 43:2, 44:1}
+# ANSWER_KEY = {0: 1, 1:0 , 2: 1, 3: 2, 4: 3, 5:1, 6:0, 7:1, 8:3, 9:0, 10:2, 11:2,
+# 	12:3, 13:1, 14:1, 15:0, 16:3, 17:2, 18:2, 19:2, 20:1, 21:2, 22:3, 23:2, 24:0,
+# 	25:1, 26:2, 27:2, 28:3, 29:0, 30:0, 31:2, 32:1, 33:1, 34:3, 35:1, 36:2, 37:3,
+# 	38:2, 39:2, 40:0, 41:2, 42:1, 43:2, 44:1}
+ANSWER_KEY ={
+    0:1,1:2,2:0,3:0,4:3,5:0,6:2,7:2,8:0,9:2,10:0,11:1,12:2,13:2,14:1,15:0,16:3,
+    17:1,18:2,19:1,20:3,21:2,22:3,23:1,24:3,25:2,26:3,27:3,28:1,29:2,30:1,31:1,
+    32:3,33:2,34:1,35:2,36:1,37:2,38:2,39:0,40:1,41:1,42:2,43:2,44:1}
 
 # WHICH_CV = "shu"
 WHICH_CV = None
 
 class Image:
-    def __init__(self, img):
+    def __init__(self, img, imgName):
         self.originalImage = img            #cv2 image object > the one we get from imread
 
-        self.croppedImage = self._crop()
-        self.show("cropped")
+        self.croppedImage = self._crop(imgName)
 
         self.preprocessedImage  = self._preProcess()
-        self.show("preprocessed")
+        # self.show("preprocessed")
 
         self.cropped_imgs = []
         self.cropped_imgs.append(self.preprocessedImage)
         # self.cropped_imgs = self._cutImage()
-        self.name = "1"
+
+        self.name = imgName
 
     def get_contours(self,image):
         if WHICH_CV == "shu":
@@ -69,7 +73,8 @@ class Image:
         contours = self.get_contours(dilated)
         for contour in contours:
             (x, y, w, h) = cv2.boundingRect(contour)
-            if h > 500:
+            ar = w / float(h)
+            if h > 50 or ar < 0.9 or ar > 1.2:
                 continue
             cv2.drawContours(mask, [contour], -1, 0, -1)
 
@@ -93,7 +98,8 @@ class Image:
 
 
     def _grade(self):
-
+        qNo = 0
+        correct = 0
         for image in self.cropped_imgs :
 
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -111,9 +117,9 @@ class Image:
                     questionCnts.append(contour)
 
             questionCnts = contours.sort_contours(questionCnts, method="top-to-bottom")[0]
-            correct = 0
-            # self.show("cropped")
-            for (q, i) in enumerate(np.arange(0, len(questionCnts), 4)):
+
+
+            for (q, i) in enumerate(np.arange(0, 60, 4)):
                 cnts = contours.sort_contours(questionCnts[i:i + 4])[0]
                 bubbled = None
                 for (j, c) in enumerate(cnts):
@@ -125,18 +131,20 @@ class Image:
                     if bubbled is None or total > bubbled[0]:
                         bubbled = (total, j)
 
-                k = ANSWER_KEY[q]
-                print(q, k, bubbled[1])
+                k = ANSWER_KEY[qNo]
+                print(qNo, k, bubbled[1])
                 if k == bubbled[1]:
                     correct += 1
+                qNo += 1
 
         print(correct)
+        return correct
 
-    def _crop(self):
+    def _crop(self, imName):
         # self.croppedImage = cv2.imread('crop.jpg')
-        cropper = Cropper(self.originalImage)
+        cropper = Cropper(self.originalImage, imName)
         self.croppedImage = cropper.get_cropped_img()
-        self.show('cropped')
+        # self.show('cropped')
 
         return self.croppedImage
 
@@ -159,10 +167,10 @@ class Image:
             self.namewindow = "preprocessed image"
             cv2.namedWindow("preprocessed image", cv2.WINDOW_NORMAL)
 
-        elif whichImage == "result":
-            im = self.resultImage
-            self.namewindow = "result image"
-            cv2.namedWindow("result image", cv2.WINDOW_NORMAL)
+        # elif whichImage == "result":
+        #     im = self.resultImage
+        #     self.namewindow = "result image"
+        #     cv2.namedWindow("result image", cv2.WINDOW_NORMAL)
 
         cv2.imshow(self.namewindow, im)
         cv2.waitKey(0)
@@ -171,26 +179,30 @@ class Image:
 class Grader:
     def __init__(self, path):
         self.images = []
+        self.imagesDict = {}
 
         self.get_images(path)
         self.iterate_images()
 
-
-
-    def get_images(self,path):
+    def get_images(self, path):
         image_paths = [os.path.join(path, f) for f in os.listdir(path)]
 
         for i in image_paths:
             img = cv2.imread(i)
+            imName = os.path.basename(os.path.normpath(i))
             self.images.append(img)
+            self.imagesDict[imName] = img
 
         return self.images
 
     def iterate_images(self):
         grades_dict = {}
-        for image in self.images:
-            im = Image(image)
-            grades_dict[im.name] = im._grade()
+        for imName in self.imagesDict:
+            image = self.imagesDict[imName]
+            print(imName)
+
+            im = Image(image, imName)
+            grades_dict[imName] = im._grade()
 
     def set_AnswerKey(self, dict):
         self.ANSWER_KEY = dict
@@ -216,20 +228,5 @@ class Grader:
         score = (1.0 * score )/ count
 
 if __name__ == '__main__':
-    # grader = Grader('/home/bubbles/3anQa2/College/imgpro/train')
-    grader = Grader('./hi')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    grader = Grader('/home/bubbles/3anQa2/College/imgpro/train')
+    # grader = Grader('./hi')

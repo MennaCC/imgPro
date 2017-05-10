@@ -5,8 +5,9 @@ import math
 from decimal import *
 
 class Cropper():
-    def __init__(self, img):
+    def __init__(self, img, croppedName):
         self.image__ = img
+        self.croppedName = croppedName
         # self.image__ = cv2.imread(image_path1)
 
         res = cv2.resize(self.image__, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
@@ -37,8 +38,15 @@ class Cropper():
         after_thresh = cv2.morphologyEx(after_thresh, cv2.MORPH_CLOSE, kernel)
         cv2.imwrite("155.png", after_thresh)
 
+        # image_ = '155.png'
+        # image = cv2.imread(image_)
         image_ = '155.png'
-        image = cv2.imread(image_)
+        image1 = cv2.imread(image_)
+        kernel = np.ones((1, 2), np.uint8)
+        img_dilation = cv2.dilate(image1, kernel, iterations=5)
+        cv2.imwrite("157.png", img_dilation)
+        image3 = "157.png"
+        image = cv2.imread(image3)
 
         resized = imutils.resize(image, width=300)
         ratio = image.shape[0] / float(resized.shape[0])
@@ -63,7 +71,7 @@ class Cropper():
             c *= ratio
             c = c.astype("int")
             cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
-            if (shape == "circle" and cY > 1000 and cv2.contourArea(c) > 2000):
+            if (shape=="circle" and cY>1000 and cv2.contourArea(c)>2000 or shape=="pentagon" and cY>1000 and cv2.contourArea(c)>2000):
                 circles.append(cX)
                 circles.append(cY)
                 area = cv2.contourArea(c)
@@ -80,7 +88,7 @@ class Cropper():
 
         theta1 = self.theta_hanem(d1, d2)
         self.rotate(image2, theta1)
-        self.crop('rotate.jpg')
+        self.crop('rotate.jpg', self.croppedName)
 
     def get_cropped_img(self):
         return self.crop_img
@@ -91,16 +99,18 @@ class Cropper():
         return theta
 
     def rotate(self,image, theta):
-        img = cv2.imread(image, 0)
+        img =45
+        cv2.imread(image, 0)
         rows, cols = img.shape
         M = cv2.getRotationMatrix2D((cols / 2, rows / 2), theta, 1)
         dst = cv2.warpAffine(img, M, (cols, rows))
         cv2.imwrite("rotate.jpg", dst)
 
-    def crop(self,image):
+    def crop(self,image, croppedName):
         img = cv2.imread('rotate.jpg')
-        self.crop_img = img[1500:2700, 200:2080]
-        cv2.imwrite("crop.jpg", self.crop_img)
+        self.crop_img = img[1490:2800, 350:750]
+        cname = croppedName + "_Cropped.jpg"
+        cv2.imwrite(cname, self.crop_img)
 
 
 # image_path1 = '/home/bubbles/3anQa2/College/imgpro/imgPro/main/1Uncropped.png'
